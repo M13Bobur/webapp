@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-
 export const useOrderSocket = (onNewOrder) => {
   useEffect(() => {
-    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
+    const socketUrl =
+      import.meta.env.VITE_SOCKET_URL || window.location.origin;
+    const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
     socket.emit('join:admin');
 
     const playSound = () => {

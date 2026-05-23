@@ -12,8 +12,20 @@ import routes from './routes/index.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const frontendDist = path.join(__dirname, '../../frontend/dist');
-const hasFrontendBuild = fs.existsSync(path.join(frontendDist, 'index.html'));
+const adminPanelDist = path.join(__dirname, '../../admin-panel/dist');
+const hasAdminBuild = fs.existsSync(path.join(adminPanelDist, 'index.html'));
+
+const isApiOrUploads = (reqPath) =>
+  reqPath.startsWith('/api') || reqPath.startsWith('/uploads');
+
+/** React SPA — barcha route lar index.html ga */
+const serveSpa = (app, distPath) => {
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (isApiOrUploads(req.path)) return next();
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+};
 
 export const createApp = () => {
   const app = express();
@@ -29,7 +41,7 @@ export const createApp = () => {
   app.use(
     helmet({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
-      contentSecurityPolicy: hasFrontendBuild ? false : undefined,
+      contentSecurityPolicy: hasAdminBuild ? false : undefined,
     })
   );
 
@@ -48,24 +60,17 @@ export const createApp = () => {
 
   app.use('/uploads', express.static(path.join(__dirname, '../', env.uploadDir)));
 
-  // API
   app.use('/api', routes);
 
-  // Frontend build (Telegram Web App — / ochilganda)
-  if (hasFrontendBuild) {
-    app.use(express.static(frontendDist));
-    app.get('*', (req, res, next) => {
-      if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
-        return next();
-      }
-      res.sendFile(path.join(frontendDist, 'index.html'));
-    });
+  // http://localhost:5000 → admin-panel/dist
+  if (hasAdminBuild) {
+    serveSpa(app, adminPanelDist);
   } else {
     app.get('/', (_req, res) => {
       res.json({
         success: true,
         message: 'Faiza Cafe API',
-        hint: 'Frontend build topilmadi. cd frontend && npm run build',
+        hint: 'Admin panel: cd admin-panel && npm run build',
         health: '/api/health',
       });
     });
