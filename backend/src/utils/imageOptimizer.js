@@ -4,20 +4,18 @@ import fs from 'fs';
 
 export const optimizeImage = async (filePath) => {
   const ext = path.extname(filePath).toLowerCase();
-  const optimizedPath = filePath.replace(ext, `-opt${ext === '.png' ? '.webp' : ext}`);
+  const webpPath = filePath.replace(ext, '.webp');
 
   try {
     await sharp(filePath)
       .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
       .webp({ quality: 85 })
-      .toFile(optimizedPath.replace(ext, '.webp'));
+      .toFile(webpPath);
 
-    if (fs.existsSync(filePath) && optimizedPath !== filePath) {
-      const webpPath = filePath.replace(ext, '.webp');
-      if (fs.existsSync(filePath) && ext !== '.webp') fs.unlinkSync(filePath);
-      return path.basename(webpPath);
+    if (fs.existsSync(filePath) && filePath !== webpPath) {
+      fs.unlinkSync(filePath);
     }
-    return path.basename(filePath);
+    return path.basename(webpPath);
   } catch {
     return path.basename(filePath);
   }
