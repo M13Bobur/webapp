@@ -101,5 +101,7 @@ export const getTopProducts = async (limit = 5) => {
   return Product.find({ isAvailable: true })
     .sort({ orderCount: -1 })
     .limit(limit)
-    .select('title price discountPrice images orderCount badges');
+    .select(
+      'title slug shortDescription price discountPrice images orderCount badges isAvailable stock'
+    );
 };

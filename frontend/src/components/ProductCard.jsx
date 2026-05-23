@@ -11,6 +11,9 @@ const badgeColors = {
 export const ProductCard = ({ product }) => {
   const addItem = useCartStore((s) => s.addItem);
   const price = product.discountPrice ?? product.price;
+  const available =
+    product.isAvailable !== false &&
+    (product.stock === undefined || product.stock > 0);
 
   return (
     <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
@@ -33,7 +36,7 @@ export const ProductCard = ({ product }) => {
               {b}
             </span>
           ))}
-          {!product.isAvailable && (
+          {!available && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50">
               <span className="text-white text-sm font-medium">Mavjud emas</span>
             </div>
@@ -57,7 +60,7 @@ export const ProductCard = ({ product }) => {
             )}
           </div>
           <button
-            disabled={!product.isAvailable}
+            disabled={!available}
             onClick={() => addItem(product)}
             className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
           >
