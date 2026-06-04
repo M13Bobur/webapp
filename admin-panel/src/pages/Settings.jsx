@@ -1,13 +1,12 @@
-import { Card } from '../components/ui';
+import { Card, PageShell } from '../components/ui';
 import { useAuthStore } from '../store/authStore';
 
 export default function Settings() {
   const admin = useAuthStore((s) => s.admin);
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Sozlamalar</h1>
-      <div className="max-w-xl space-y-6">
+    <PageShell title="Sozlamalar">
+      <div className="max-w-xl space-y-4 sm:space-y-6">
         <Card title="Hisob ma'lumotlari">
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between">
@@ -31,6 +30,6 @@ export default function Settings() {
           </p>
         </Card>
       </div>
-    </div>
+    </PageShell>
   );
 }

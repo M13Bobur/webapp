@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../api/axios';
-import { Input, Pagination } from '../components/ui';
+import { Input, Pagination, PageShell } from '../components/ui';
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
@@ -29,37 +29,63 @@ export default function Customers() {
   }, [search, load]);
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Mijozlar</h1>
-      <Input placeholder="Qidirish..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-64 mb-6" />
+    <PageShell title="Mijozlar">
+      <Input
+        placeholder="Qidirish..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="mb-4 w-full sm:mb-6 sm:w-64"
+      />
 
-      <div className="rounded-xl bg-white border shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="text-left px-4 py-3">Ism</th>
-              <th className="text-left px-4 py-3">Telefon</th>
-              <th className="text-left px-4 py-3">Username</th>
-              <th className="text-left px-4 py-3">Telegram ID</th>
-              <th className="text-left px-4 py-3">Ro'yxatdan o'tgan</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center">Yuklanmoqda...</td></tr>
-            ) : customers.map((c) => (
-              <tr key={c._id} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium">{c.fullname || '—'}</td>
-                <td className="px-4 py-3">{c.phone || '—'}</td>
-                <td className="px-4 py-3">@{c.username || '—'}</td>
-                <td className="px-4 py-3 font-mono text-xs">{c.telegramId}</td>
-                <td className="px-4 py-3 text-gray-500">{new Date(c.createdAt).toLocaleDateString('uz-UZ')}</td>
+      <div className="space-y-3 md:hidden">
+        {loading ? (
+          <p className="py-8 text-center text-gray-500">Yuklanmoqda...</p>
+        ) : customers.length === 0 ? (
+          <p className="py-8 text-center text-gray-500">Mijozlar yo&apos;q</p>
+        ) : (
+          customers.map((c) => (
+            <div key={c._id} className="rounded-xl border bg-white p-4 shadow-sm">
+              <p className="font-semibold">{c.fullname || '—'}</p>
+              <p className="mt-1 text-sm text-gray-600">{c.phone || '—'}</p>
+              {c.username && <p className="text-sm text-gray-500">@{c.username}</p>}
+              <p className="mt-2 font-mono text-xs text-gray-400">ID: {c.telegramId}</p>
+              <p className="mt-1 text-xs text-gray-400">
+                {new Date(c.createdAt).toLocaleDateString('uz-UZ')}
+              </p>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-xl border bg-white shadow-sm md:block">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-sm">
+            <thead className="border-b bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left">Ism</th>
+                <th className="px-4 py-3 text-left">Telefon</th>
+                <th className="px-4 py-3 text-left">Username</th>
+                <th className="px-4 py-3 text-left">Telegram ID</th>
+                <th className="px-4 py-3 text-left">Ro&apos;yxatdan o&apos;tgan</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={5} className="px-4 py-8 text-center">Yuklanmoqda...</td></tr>
+              ) : customers.map((c) => (
+                <tr key={c._id} className="border-b hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium">{c.fullname || '—'}</td>
+                  <td className="px-4 py-3">{c.phone || '—'}</td>
+                  <td className="px-4 py-3">@{c.username || '—'}</td>
+                  <td className="px-4 py-3 font-mono text-xs">{c.telegramId}</td>
+                  <td className="px-4 py-3 text-gray-500">{new Date(c.createdAt).toLocaleDateString('uz-UZ')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
       <Pagination page={pagination.page} totalPages={pagination.totalPages} onPageChange={load} />
-    </div>
+    </PageShell>
   );
 }

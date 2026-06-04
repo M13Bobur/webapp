@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api, getImageUrl } from '../api/axios';
-import { Button, Input, Select, Modal, Badge, Pagination } from '../components/ui';
+import { Button, Input, Select, Modal, Badge, Pagination, PageShell } from '../components/ui';
 
 const emptyForm = {
   title: '', description: '', shortDescription: '', price: '',
@@ -158,17 +158,16 @@ export default function Products() {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Mahsulotlar</h1>
-        <Button onClick={openCreate}>+ Yangi mahsulot</Button>
-      </div>
-      <Input placeholder="Qidirish..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-64 mb-6" />
+    <PageShell
+      title="Mahsulotlar"
+      action={<Button className="w-full sm:w-auto" onClick={openCreate}>+ Yangi mahsulot</Button>}
+    >
+      <Input placeholder="Qidirish..." value={search} onChange={(e) => setSearch(e.target.value)} className="mb-4 w-full sm:mb-6 sm:w-64" />
 
       {loading ? (
         <p>Yuklanmoqda...</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {products.map((p) => (
             <div key={p._id} className="rounded-xl bg-white border shadow-sm overflow-hidden">
               <div className="h-40 bg-gray-100">
@@ -238,7 +237,7 @@ export default function Products() {
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-700">Variantlar va narxlari</p>
                 {variants.map((v, index) => (
-                  <div key={index} className="flex gap-2 items-end">
+                  <div key={index} className="flex flex-col gap-2 sm:flex-row sm:items-end">
                     <Input
                       label={index === 0 ? 'Nomi' : undefined}
                       placeholder="Kichik"
@@ -253,7 +252,7 @@ export default function Products() {
                       placeholder="45000"
                       value={v.price}
                       onChange={(e) => updateVariant(index, 'price', e.target.value)}
-                      className="w-32"
+                      className="w-full sm:w-32"
                       required
                     />
                     <Button
@@ -312,6 +311,6 @@ export default function Products() {
           <Button type="submit" className="w-full">Saqlash</Button>
         </form>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api, getImageUrl } from '../api/axios';
-import { Button, Badge, Select, Input, Pagination, Modal } from '../components/ui';
+import { Button, Badge, Select, Input, Pagination, Modal, PageShell } from '../components/ui';
 import { useOrderSocket } from '../hooks/useSocket';
 
 const OrderViewIcon = () => (
@@ -127,26 +127,79 @@ export default function Orders() {
     }
   };
 
+  const renderOrderActions = (order) => (
+    <div className="flex flex-wrap gap-1">
+      {(nextStatuses[order.status] || []).map((s) => (
+        <Button
+          key={s}
+          variant="secondary"
+          className="!px-2 !py-1 text-xs"
+          onClick={() => updateStatus(order._id, s)}
+        >
+          {statusLabels[s] || s}
+        </Button>
+      ))}
+    </div>
+  );
+
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Buyurtmalar</h1>
-      <div className="flex flex-wrap gap-4 mb-6">
+    <PageShell title="Buyurtmalar">
+      <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap">
         <Input
           placeholder="Buyurtma raqami yoki telefon..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="w-64"
+          className="w-full sm:w-64"
         />
         <Select
           options={statusOptions}
           value={filters.status}
           onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          className="w-48"
+          className="w-full sm:w-48"
         />
       </div>
 
-      <div className="rounded-xl bg-white shadow-sm border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="space-y-3 md:hidden">
+        {loading ? (
+          <p className="py-8 text-center text-gray-500">Yuklanmoqda...</p>
+        ) : orders.length === 0 ? (
+          <p className="py-8 text-center text-gray-500">Buyurtmalar yo&apos;q</p>
+        ) : (
+          orders.map((order) => {
+            const d = deliveryLabels[order.deliveryType] || deliveryLabels.delivery;
+            return (
+              <div key={order._id} className="relative rounded-xl border bg-white p-4 shadow-sm">
+                <button
+                  type="button"
+                  title="Buyurtmani ko'rish"
+                  onClick={() => openOrderView(order)}
+                  className="absolute top-3 right-3 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-orange-600 shadow-sm"
+                >
+                  <OrderViewIcon />
+                </button>
+                <p className="pr-12 font-mono text-xs text-gray-500">{order.orderNumber}</p>
+                <p className="mt-1 font-semibold">{order.customerId?.fullname || '—'}</p>
+                <p className="text-sm text-gray-500">{order.phone}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge color={statusColors[order.status]}>{statusLabels[order.status]}</Badge>
+                  <Badge color={d.color}>{d.icon} {d.label}</Badge>
+                </div>
+                <p className="mt-2 text-lg font-bold text-orange-600">
+                  {order.totalPrice.toLocaleString()} so&apos;m
+                </p>
+                <p className="text-xs text-gray-400">
+                  {new Date(order.createdAt).toLocaleString('uz-UZ')} · {order.items.length} ta mahsulot
+                </p>
+                <div className="mt-3 border-t pt-3">{renderOrderActions(order)}</div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-xl border bg-white shadow-sm md:block">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="text-left px-4 py-3 font-medium">№</th>
@@ -188,15 +241,7 @@ export default function Orders() {
                   <td className="px-4 py-3 text-xs text-gray-500">
                     {new Date(order.createdAt).toLocaleString('uz-UZ')}
                   </td>
-                  <td className="px-4 py-3 pr-14">
-                    <div className="flex flex-wrap gap-1">
-                      {(nextStatuses[order.status] || []).map((s) => (
-                        <Button key={s} variant="secondary" className="!px-2 !py-1 text-xs" onClick={() => updateStatus(order._id, s)}>
-                          {statusLabels[s] || s}
-                        </Button>
-                      ))}
-                    </div>
-                  </td>
+                  <td className="px-4 py-3 pr-14">{renderOrderActions(order)}</td>
                   <button
                     type="button"
                     title="Buyurtmani ko'rish"
@@ -210,6 +255,7 @@ export default function Orders() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
       <Pagination
         page={pagination.page}
@@ -225,7 +271,7 @@ export default function Orders() {
       >
         {viewOrder && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
               <div>
                 <p className="text-gray-500">Mijoz</p>
                 <p className="font-medium">{viewOrder.customerId?.fullname || '—'}</p>
@@ -276,10 +322,10 @@ export default function Orders() {
                   return (
                     <div
                       key={idx}
-                      className="flex gap-5 rounded-xl border border-gray-200 bg-gray-50/50 p-4"
+                      className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50/50 p-3 sm:flex-row sm:gap-5 sm:p-4"
                     >
-                      <div className="flex min-w-0 flex-1 items-center gap-4">
-                        <div className="h-36 w-36 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                      <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+                        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm sm:h-36 sm:w-36">
                           {img ? (
                             <img
                               src={img}
@@ -292,12 +338,12 @@ export default function Orders() {
                             </div>
                           )}
                         </div>
-                        <p className="text-[2rem] font-semibold leading-tight text-gray-900">
+                        <p className="text-lg font-semibold leading-tight text-gray-900 sm:text-2xl">
                           {item.title}
                         </p>
                       </div>
-                      <div className="flex min-h-[9rem] flex-1 flex-col items-end justify-between py-1">
-                        <p className="text-4xl font-bold leading-none text-gray-800">
+                      <div className="flex flex-row items-end justify-between gap-2 sm:min-h-[9rem] sm:flex-1 sm:flex-col sm:items-end sm:justify-between sm:py-1">
+                        <p className="text-2xl font-bold leading-none text-gray-800 sm:text-4xl">
                           ×{item.quantity}
                         </p>
                         <div className="text-right">
@@ -316,12 +362,12 @@ export default function Orders() {
               )}
 
               {(nextStatuses[viewOrder.status] || []).length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-4 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
                   {(nextStatuses[viewOrder.status] || []).map((s) => (
                     <Button
                       key={s}
                       variant="secondary"
-                      className={`!px-4 !py-2.5 text-sm font-medium ${statusButtonClass[s] || ''}`}
+                      className={`w-full sm:w-auto !px-4 !py-2.5 text-sm font-medium ${statusButtonClass[s] || ''}`}
                       onClick={() => updateStatus(viewOrder._id, s)}
                     >
                       {statusLabels[s] || s}
@@ -338,10 +384,10 @@ export default function Orders() {
               </div>
             </div>
 
-            <div className="flex justify-end pt-4 border-t border-gray-100">
+            <div className="flex justify-end border-t border-gray-100 pt-4">
               <Button
                 variant="secondary"
-                className="!px-6"
+                className="w-full sm:w-auto !px-6"
                 onClick={() => setViewOrder(null)}
               >
                 Yopish
@@ -350,6 +396,6 @@ export default function Orders() {
           </div>
         )}
       </Modal>
-    </div>
+    </PageShell>
   );
 }

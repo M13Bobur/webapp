@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, getImageUrl } from '../api/axios';
-import { Button, Input, Modal, Badge } from '../components/ui';
+import { Button, Input, Modal, Badge, PageShell } from '../components/ui';
 
 export default function Categories() {
   const [categories, setCategories] = useState([]);
@@ -44,15 +44,18 @@ export default function Categories() {
   };
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Kategoriyalar</h1>
-        <Button onClick={() => { setEditing(null); setForm({ title: '', sortOrder: 0, isActive: true }); setModalOpen(true); }}>
+    <PageShell
+      title="Kategoriyalar"
+      action={
+        <Button
+          className="w-full sm:w-auto"
+          onClick={() => { setEditing(null); setForm({ title: '', sortOrder: 0, isActive: true }); setModalOpen(true); }}
+        >
           + Yangi kategoriya
         </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      }
+    >
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
         {categories.map((cat) => (
           <div key={cat._id} className="rounded-xl bg-white border p-4 flex gap-4">
             <div className="h-16 w-16 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
@@ -88,6 +91,6 @@ export default function Categories() {
           <Button type="submit" className="w-full">Saqlash</Button>
         </form>
       </Modal>
-    </div>
+    </PageShell>
   );
 }

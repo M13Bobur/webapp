@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../api/axios';
-import { Card } from '../components/ui';
+import { Card, PageShell } from '../components/ui';
 import { useOrderSocket } from '../hooks/useSocket';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -36,7 +36,7 @@ export default function Dashboard() {
   useEffect(() => { loadStats(); }, [loadStats]);
   useOrderSocket(() => loadStats());
 
-  if (loading) return <div className="p-8">Yuklanmoqda...</div>;
+  if (loading) return <PageShell title="Dashboard"><p className="text-gray-500">Yuklanmoqda...</p></PageShell>;
 
   const chartData = stats?.revenueChart?.map((d) => ({
     date: d._id?.slice(5) || d._id,
@@ -45,18 +45,17 @@ export default function Dashboard() {
   })) || [];
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <PageShell title="Dashboard">
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         <StatCard title="Jami buyurtmalar" value={stats?.totalOrders || 0} icon="📦" color="text-blue-600" />
         <StatCard title="Bugungi buyurtmalar" value={stats?.todayOrders || 0} icon="📅" color="text-green-600" />
         <StatCard title="Jami daromad" value={`${(stats?.totalRevenue || 0).toLocaleString()} so'm`} icon="💰" color="text-orange-600" />
         <StatCard title="Faol mijozlar" value={stats?.activeCustomers || 0} icon="👥" color="text-purple-600" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
         <Card title="7 kunlik daromad">
-          <div className="h-64">
+          <div className="h-48 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -84,6 +83,6 @@ export default function Dashboard() {
           </ul>
         </Card>
       </div>
-    </div>
+    </PageShell>
   );
 }
