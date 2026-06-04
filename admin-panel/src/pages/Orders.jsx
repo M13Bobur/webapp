@@ -13,7 +13,14 @@ const OrderViewIcon = () => (
   </svg>
 );
 
-const getItemImage = (item) => (item.image ? getImageUrl(item.image) : '');
+const getItemImage = (item) => {
+  const path =
+    item.image ||
+    item.product?.image ||
+    item.product?.images?.[0] ||
+    (typeof item.productId === 'object' ? item.productId?.images?.[0] : '');
+  return path ? getImageUrl(path) : '';
+};
 
 const statusOptions = [
   { value: '', label: 'Barcha holatlar' },
@@ -88,7 +95,12 @@ export default function Orders() {
     await api.patch(`/orders/${id}/status`, { status });
     loadOrders(pagination.page);
     if (viewOrder?._id === id) {
-      setViewOrder((prev) => (prev ? { ...prev, status } : null));
+      try {
+        const res = await api.get(`/orders/${id}`);
+        setViewOrder(res.data.data);
+      } catch {
+        setViewOrder((prev) => (prev ? { ...prev, status } : null));
+      }
     }
   };
 
