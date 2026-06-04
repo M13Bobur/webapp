@@ -13,12 +13,7 @@ const OrderViewIcon = () => (
   </svg>
 );
 
-const getItemImage = (item) => {
-  const path =
-    item.image ||
-    (item.productId && typeof item.productId === 'object' ? item.productId.images?.[0] : null);
-  return path ? getImageUrl(path) : '';
-};
+const getItemImage = (item) => (item.image ? getImageUrl(item.image) : '');
 
 const statusOptions = [
   { value: '', label: 'Barcha holatlar' },
@@ -63,6 +58,7 @@ export default function Orders() {
   const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [viewOrder, setViewOrder] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
   const loadOrders = useCallback(async (page = 1) => {
     setLoading(true);
@@ -97,6 +93,19 @@ export default function Orders() {
   };
 
   const delivery = viewOrder ? deliveryLabels[viewOrder.deliveryType] : null;
+
+  const openOrderView = async (order) => {
+    setViewOrder(order);
+    setViewLoading(true);
+    try {
+      const res = await api.get(`/orders/${order._id}`);
+      setViewOrder(res.data.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setViewLoading(false);
+    }
+  };
 
   return (
     <div className="p-8">
@@ -171,7 +180,7 @@ export default function Orders() {
                   <button
                     type="button"
                     title="Buyurtmani ko'rish"
-                    onClick={() => setViewOrder(order)}
+                    onClick={() => openOrderView(order)}
                     className="absolute top-2 right-2 z-10 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-orange-600 shadow-sm transition hover:border-orange-300 hover:bg-orange-50"
                   >
                     <OrderViewIcon />
@@ -238,40 +247,53 @@ export default function Orders() {
 
             <div>
               <p className="text-sm font-medium text-gray-700 mb-3">Buyurtma qilingan mahsulotlar</p>
-              <div className="space-y-3">
+              {viewLoading ? (
+                <p className="text-sm text-gray-500 py-4 text-center">Yuklanmoqda...</p>
+              ) : (
+              <div className="space-y-4">
                 {viewOrder.items.map((item, idx) => {
                   const img = getItemImage(item);
                   return (
                     <div
                       key={idx}
-                      className="flex gap-4 rounded-xl border border-gray-200 bg-gray-50/50 p-4"
+                      className="flex gap-5 rounded-xl border border-gray-200 bg-gray-50/50 p-4"
                     >
-                      <div className="h-32 w-32 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                        {img ? (
-                          <img
-                            src={img}
-                            alt={item.title}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-gray-100 text-xs text-gray-400">
-                            Rasm yo&apos;q
-                          </div>
-                        )}
+                      <div className="w-36 shrink-0">
+                        <div className="h-36 w-36 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                          {img ? (
+                            <img
+                              src={img}
+                              alt={item.title}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-gray-100 text-xs text-gray-400">
+                              Rasm yo&apos;q
+                            </div>
+                          )}
+                        </div>
+                        <p className="mt-2 text-sm font-semibold text-gray-900 leading-snug">
+                          {item.title}
+                        </p>
                       </div>
-                      <div className="flex min-w-0 flex-1 flex-col justify-center">
-                        <p className="text-base font-semibold text-gray-900">{item.title}</p>
-                        <p className="mt-1 text-sm text-gray-500">
-                          {item.price.toLocaleString()} so&apos;m × {item.quantity}
+                      <div className="flex min-h-[9rem] flex-1 flex-col items-end justify-between py-1">
+                        <p className="text-4xl font-bold leading-none text-gray-800">
+                          ×{item.quantity}
                         </p>
-                        <p className="mt-2 text-lg font-bold text-orange-600">
-                          {(item.price * item.quantity).toLocaleString()} so&apos;m
-                        </p>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">
+                            {item.price.toLocaleString()} so&apos;m / dona
+                          </p>
+                          <p className="mt-0.5 text-sm font-medium text-orange-600">
+                            {(item.price * item.quantity).toLocaleString()} so&apos;m
+                          </p>
+                        </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
+              )}
               <div className="mt-4 flex justify-between rounded-xl bg-orange-50 px-4 py-3 font-semibold">
                 <span>Jami</span>
                 <span className="text-lg text-orange-600">

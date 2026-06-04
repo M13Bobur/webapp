@@ -29,9 +29,15 @@ const trimSlash = (v) => (v || '').trim().replace(/\/$/, '');
 export const getImageUrl = (path) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
+
+  let normalized = String(path).trim();
+  if (!normalized.startsWith('/')) {
+    normalized = normalized.startsWith('uploads/') ? `/${normalized}` : `/uploads/${normalized}`;
+  }
+
   const base =
     trimSlash(import.meta.env.VITE_UPLOADS_URL) ||
     trimSlash(import.meta.env.VITE_BACKEND_URL) ||
     '';
-  return `${base}${path}`;
+  return base ? `${base}${normalized}` : normalized;
 };
