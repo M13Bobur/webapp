@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/axios';
 import { useCartStore } from '../store/cartStore';
@@ -14,8 +14,17 @@ export default function Checkout() {
     address: '',
     comment: '',
     deliveryType: 'delivery',
-    paymentMethod: 'cash',
   });
+
+  useEffect(() => {
+    api
+      .get('/customers/me')
+      .then((res) => {
+        const phone = res.data.data?.phone;
+        if (phone) setForm((prev) => ({ ...prev, phone }));
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,7 +40,6 @@ export default function Checkout() {
         address: form.address,
         comment: form.comment,
         deliveryType: form.deliveryType,
-        paymentMethod: form.paymentMethod,
       });
       clearCart();
       tg?.HapticFeedback?.notificationOccurred('success');
@@ -62,6 +70,9 @@ export default function Checkout() {
             placeholder="+998 90 123 45 67"
             className="mt-1 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm"
           />
+          <p className="mt-1 text-xs text-gray-400">
+            Botda ulashgan raqamingiz avtomatik ko&apos;rsatiladi. Boshqa raqam kerak bo&apos;lsa, o&apos;zgartiring.
+          </p>
         </div>
         <div>
           <label className="text-sm text-gray-500">Yetkazish turi</label>
@@ -94,19 +105,6 @@ export default function Checkout() {
             />
           </div>
         )}
-        <div>
-          <label className="text-sm text-gray-500">To'lov usuli</label>
-          <select
-            value={form.paymentMethod}
-            onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
-            className="mt-1 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm"
-          >
-            <option value="cash">Naqd pul</option>
-            <option value="card">Karta</option>
-            <option value="click">Click</option>
-            <option value="payme">Payme</option>
-          </select>
-        </div>
         <div>
           <label className="text-sm text-gray-500">Izoh</label>
           <textarea
