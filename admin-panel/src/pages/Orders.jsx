@@ -58,6 +58,14 @@ const nextStatuses = {
   delivering: ['completed', 'cancelled'],
 };
 
+const statusButtonClass = {
+  accepted: '!bg-green-600 hover:!bg-green-700 !text-white !border-green-600',
+  cancelled: '!bg-red-600 hover:!bg-red-700 !text-white !border-red-600',
+  preparing: '!bg-purple-600 hover:!bg-purple-700 !text-white !border-purple-600',
+  delivering: '!bg-blue-600 hover:!bg-blue-700 !text-white !border-blue-600',
+  completed: '!bg-gray-800 hover:!bg-gray-900 !text-white !border-gray-800',
+};
+
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
@@ -306,6 +314,22 @@ export default function Orders() {
                 })}
               </div>
               )}
+
+              {(nextStatuses[viewOrder.status] || []).length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {(nextStatuses[viewOrder.status] || []).map((s) => (
+                    <Button
+                      key={s}
+                      variant="secondary"
+                      className={`!px-4 !py-2.5 text-sm font-medium ${statusButtonClass[s] || ''}`}
+                      onClick={() => updateStatus(viewOrder._id, s)}
+                    >
+                      {statusLabels[s] || s}
+                    </Button>
+                  ))}
+                </div>
+              )}
+
               <div className="mt-4 flex justify-between rounded-xl bg-orange-50 px-4 py-3 font-semibold">
                 <span>Jami</span>
                 <span className="text-lg text-orange-600">
@@ -314,20 +338,15 @@ export default function Orders() {
               </div>
             </div>
 
-            {(nextStatuses[viewOrder.status] || []).length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-2 border-t">
-                {(nextStatuses[viewOrder.status] || []).map((s) => (
-                  <Button
-                    key={s}
-                    variant="secondary"
-                    className="text-xs"
-                    onClick={() => updateStatus(viewOrder._id, s)}
-                  >
-                    {statusLabels[s] || s}
-                  </Button>
-                ))}
-              </div>
-            )}
+            <div className="flex justify-end pt-4 border-t border-gray-100">
+              <Button
+                variant="secondary"
+                className="!px-6"
+                onClick={() => setViewOrder(null)}
+              >
+                Yopish
+              </Button>
+            </div>
           </div>
         )}
       </Modal>
