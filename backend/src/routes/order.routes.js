@@ -6,6 +6,7 @@ import {
   createOrderSchema,
   updateOrderStatusSchema,
   orderQuerySchema,
+  orderIdSchema,
 } from '../validators/order.validator.js';
 
 const router = Router();
@@ -15,6 +16,7 @@ router.get('/my', telegramWebAppAuth, validate(orderQuerySchema), orderControlle
 
 router.get('/stats', protectAdmin, orderController.getDashboardStats);
 router.get('/', protectAdmin, validate(orderQuerySchema), orderController.getOrders);
+router.get('/:id', protectAdmin, validate(orderIdSchema), orderController.getOrder);
 router.patch(
   '/:id/status',
   protectAdmin,

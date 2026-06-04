@@ -10,6 +10,89 @@ import {
   emitOrderUpdate,
 } from './notification.service.js';
 
+const normalizeImagePath = (path) => {
+  if (!path || typeof path !== 'string') return '';
+  const p = path.trim();
+  if (p.startsWith('http')) return p;
+  if (p.startsWith('/uploads/')) return p;
+  if (p.startsWith('uploads/')) return `/${p}`;
+  return `/uploads/${p}`;
+};
+
+const orderPopulate = [
+  { path: 'customerId', select: 'fullname phone username telegramId chatId' },
+  { path: 'items.productId', select: 'images title' },
+];
+
+export const enrichOrdersWithImages = async (orders) => {
+  const productIds = new Set();
+
+  for (const order of orders) {
+    for (const item of order.items || []) {
+      const id = item.productId?._id || item.productId;
+      if (id) productIds.add(String(id));
+    }
+  }
+
+  let productMap = {};
+  if (productIds.size > 0) {
+    const products = await Product.find({ _id: { $in: [...productIds] } })
+      .select('images title')
+      .lean();
+    productMap = Object.fromEntries(
+      products.map((p) => {
+        const image = normalizeImagePath(p.images?.[0] || '');
+        return [
+          String(p._id),
+          {
+            _id: p._id,
+            title: p.title,
+            image,
+            images: (p.images || []).map(normalizeImagePath).filter(Boolean),
+          },
+        ];
+      })
+    );
+  }
+
+  return orders.map((order) => {
+    const doc = order.toObject ? order.toObject() : { ...order };
+    doc.items = (doc.items || []).map((item) => {
+      const pid = String(item.productId?._id || item.productId || '');
+      const populated =
+        item.productId && typeof item.productId === 'object' ? item.productId : null;
+      const fromDb = productMap[pid];
+      const fromPopulate = populated
+        ? {
+            _id: populated._id,
+            title: populated.title,
+            image: normalizeImagePath(populated.images?.[0] || ''),
+            images: (populated.images || []).map(normalizeImagePath).filter(Boolean),
+          }
+        : null;
+      const product = fromDb || fromPopulate;
+      const image = normalizeImagePath(
+        item.image || product?.image || product?.images?.[0] || ''
+      );
+
+      return {
+        productId: pid,
+        title: item.title,
+        quantity: item.quantity,
+        price: item.price,
+        image,
+        product: {
+          _id: product?._id || pid,
+          title: product?.title || item.title,
+          image,
+          images: product?.images?.length ? product.images : image ? [image] : [],
+        },
+      };
+    });
+    return doc;
+  });
+};
+
 export const createOrder = async (customerId, orderData) => {
   const { items, deliveryType, address, comment, phone, paymentMethod } = orderData;
 
@@ -29,6 +112,7 @@ export const createOrder = async (customerId, orderData) => {
     orderItems.push({
       productId: product._id,
       title: product.title,
+      image: normalizeImagePath(product.images?.[0] || ''),
       quantity: item.quantity,
       price,
     });
@@ -52,15 +136,15 @@ export const createOrder = async (customerId, orderData) => {
     status: 'pending',
   });
 
-  const populated = await Order.findById(order._id)
-    .populate('customerId', 'fullname phone telegramId chatId username');
+  const populated = await Order.findById(order._id).populate(orderPopulate);
+  const [enriched] = await enrichOrdersWithImages([populated]);
 
   const customer = populated.customerId;
-  await notifyAdminNewOrder(populated, customer);
-  await notifyCustomerOrder(customer, populated, 'pending');
-  emitOrderUpdate(populated);
+  await notifyAdminNewOrder(enriched, customer);
+  await notifyCustomerOrder(customer, enriched, 'pending');
+  emitOrderUpdate(enriched);
 
-  return populated;
+  return enriched;
 };
 
 export const getAllOrders = async (query) => {
@@ -83,15 +167,19 @@ export const getAllOrders = async (query) => {
   const sort = query.sort || '-createdAt';
 
   const [orders, total] = await Promise.all([
-    Order.find(filter)
-      .populate('customerId', 'fullname phone username telegramId')
-      .sort(sort)
-      .skip(skip)
-      .limit(limit),
+    Order.find(filter).populate(orderPopulate).sort(sort).skip(skip).limit(limit),
     Order.countDocuments(filter),
   ]);
 
-  return paginatedResponse(orders, total, page, limit);
+  const enriched = await enrichOrdersWithImages(orders);
+  return paginatedResponse(enriched, total, page, limit);
+};
+
+export const getOrderById = async (id) => {
+  const order = await Order.findById(id).populate(orderPopulate);
+  if (!order) throw new AppError('Order not found', 404);
+  const [enriched] = await enrichOrdersWithImages([order]);
+  return enriched;
 };
 
 export const getCustomerOrders = async (customerId, query) => {
@@ -107,10 +195,7 @@ export const getCustomerOrders = async (customerId, query) => {
 };
 
 export const updateOrderStatus = async (id, status) => {
-  const order = await Order.findById(id).populate(
-    'customerId',
-    'fullname phone chatId telegramId'
-  );
+  const order = await Order.findById(id).populate(orderPopulate);
   if (!order) throw new AppError('Order not found', 404);
 
   const previousStatus = order.status;
@@ -125,8 +210,9 @@ export const updateOrderStatus = async (id, status) => {
     }
   }
 
-  emitOrderUpdate(order);
-  return order;
+  const [enriched] = await enrichOrdersWithImages([order]);
+  emitOrderUpdate(enriched);
+  return enriched;
 };
 
 export const getOrderStats = async () => {

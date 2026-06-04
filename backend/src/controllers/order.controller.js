@@ -13,6 +13,11 @@ export const getOrders = asyncHandler(async (req, res) => {
   res.json({ success: true, ...result });
 });
 
+export const getOrder = asyncHandler(async (req, res) => {
+  const order = await orderService.getOrderById(req.params.id);
+  res.json({ success: true, data: order });
+});
+
 export const getMyOrders = asyncHandler(async (req, res) => {
   const result = await orderService.getCustomerOrders(req.customer._id, req.query);
   res.json({ success: true, ...result });
