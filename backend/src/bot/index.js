@@ -27,7 +27,6 @@ export const initBot = () => {
       chatId: ctx.chat.id,
       fullname: [user.first_name, user.last_name].filter(Boolean).join(' '),
       username: user.username || '',
-      phone: '',
     });
 
     const welcomeText = existing.phone

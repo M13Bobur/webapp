@@ -1,19 +1,27 @@
 import { Customer } from '../models/Customer.js';
 import { Order } from '../models/Order.js';
 import { AppError } from '../utils/AppError.js';
+import { normalizePhone } from '../utils/phone.js';
 import { getPagination, paginatedResponse } from '../utils/pagination.js';
 
 export const saveTelegramCustomer = async (data) => {
   const { telegramId, chatId, fullname, username, phone } = data;
 
+  const update = {
+    chatId: String(chatId),
+    fullname: fullname || '',
+    username: username || '',
+  };
+
+  if (phone != null && String(phone).trim()) {
+    update.phone = normalizePhone(phone);
+  }
+
   const customer = await Customer.findOneAndUpdate(
     { telegramId: String(telegramId) },
     {
-      telegramId: String(telegramId),
-      chatId: String(chatId),
-      fullname: fullname || '',
-      username: username || '',
-      phone: phone || '',
+      $set: update,
+      $setOnInsert: { telegramId: String(telegramId) },
     },
     { upsert: true, new: true, runValidators: true }
   );

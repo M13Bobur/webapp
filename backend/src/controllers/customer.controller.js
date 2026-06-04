@@ -6,6 +6,17 @@ export const saveCustomer = asyncHandler(async (req, res) => {
   res.json({ success: true, data: customer });
 });
 
+export const getMe = asyncHandler(async (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      fullname: req.customer.fullname,
+      phone: req.customer.phone,
+      username: req.customer.username,
+    },
+  });
+});
+
 export const getCustomers = asyncHandler(async (req, res) => {
   const result = await customerService.getCustomers(req.query);
   res.json({ success: true, ...result });
