@@ -1,7 +1,22 @@
 import { useEffect, useState, useCallback } from 'react';
-import { api } from '../api/axios';
+import { api, getImageUrl } from '../api/axios';
 import { Button, Badge, Select, Input, Pagination, Modal } from '../components/ui';
 import { useOrderSocket } from '../hooks/useSocket';
+
+const OrderViewIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="8" y1="13" x2="16" y2="13" />
+    <line x1="8" y1="17" x2="16" y2="17" />
+    <line x1="8" y1="9" x2="10" y2="9" />
+  </svg>
+);
+
+const getItemImage = (item) => {
+  const path = item.productId?.images?.[0];
+  return path ? getImageUrl(path) : '';
+};
 
 const statusOptions = [
   { value: '', label: 'Barcha holatlar' },
@@ -120,7 +135,7 @@ export default function Orders() {
             ) : orders.map((order) => {
               const d = deliveryLabels[order.deliveryType] || deliveryLabels.delivery;
               return (
-                <tr key={order._id} className="border-b hover:bg-gray-50">
+                <tr key={order._id} className="border-b hover:bg-gray-50 relative">
                   <td className="px-4 py-3 font-mono text-xs">{order.orderNumber}</td>
                   <td className="px-4 py-3">
                     <p className="font-medium">{order.customerId?.fullname || '—'}</p>
@@ -142,16 +157,8 @@ export default function Orders() {
                   <td className="px-4 py-3 text-xs text-gray-500">
                     {new Date(order.createdAt).toLocaleString('uz-UZ')}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        className="!px-2 !py-1 text-base"
-                        title="Buyurtmani ko'rish"
-                        onClick={() => setViewOrder(order)}
-                      >
-                        👁
-                      </Button>
+                  <td className="px-4 py-3 pr-14">
+                    <div className="flex flex-wrap gap-1">
                       {(nextStatuses[order.status] || []).map((s) => (
                         <Button key={s} variant="secondary" className="!px-2 !py-1 text-xs" onClick={() => updateStatus(order._id, s)}>
                           {statusLabels[s] || s}
@@ -159,6 +166,14 @@ export default function Orders() {
                       ))}
                     </div>
                   </td>
+                  <button
+                    type="button"
+                    title="Buyurtmani ko'rish"
+                    onClick={() => setViewOrder(order)}
+                    className="absolute top-2 right-2 z-10 flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-orange-600 shadow-sm transition hover:border-orange-300 hover:bg-orange-50"
+                  >
+                    <OrderViewIcon />
+                  </button>
                 </tr>
               );
             })}
@@ -232,16 +247,30 @@ export default function Orders() {
                     </tr>
                   </thead>
                   <tbody>
-                    {viewOrder.items.map((item, idx) => (
-                      <tr key={idx} className="border-b last:border-0">
-                        <td className="px-3 py-2">{item.title}</td>
-                        <td className="px-3 py-2 text-right">{item.quantity}</td>
-                        <td className="px-3 py-2 text-right">{item.price.toLocaleString()}</td>
-                        <td className="px-3 py-2 text-right font-medium">
-                          {(item.price * item.quantity).toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
+                    {viewOrder.items.map((item, idx) => {
+                      const img = getItemImage(item);
+                      return (
+                        <tr key={idx} className="border-b last:border-0">
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-3">
+                              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
+                                {img ? (
+                                  <img src={img} alt={item.title} className="h-full w-full object-cover" />
+                                ) : (
+                                  <span className="flex h-full w-full items-center justify-center text-2xl text-gray-400">🍽</span>
+                                )}
+                              </div>
+                              <span className="font-medium">{item.title}</span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 text-right align-middle">{item.quantity}</td>
+                          <td className="px-3 py-2 text-right align-middle">{item.price.toLocaleString()}</td>
+                          <td className="px-3 py-2 text-right align-middle font-medium">
+                            {(item.price * item.quantity).toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                   <tfoot className="bg-gray-50">
                     <tr>
