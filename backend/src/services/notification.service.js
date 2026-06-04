@@ -33,11 +33,23 @@ export const notifyCustomerOrder = async (customer, order, status) => {
   }
 };
 
+const deliveryTypeLabels = {
+  pickup: '🏪 Olib ketish',
+  delivery: '🚗 Yetkazib berish',
+};
+
 export const notifyAdminNewOrder = async (order, customer) => {
   if (!botInstance || !env.adminTelegramChatId) return;
 
   const items = order.items.map((i) => `• ${i.title} x${i.quantity}`).join('\n');
-  const text = `🆕 YANGI BUYURTMA\n\n📦 ${order.orderNumber}\n👤 ${customer?.fullname || customer?.phone}\n📞 ${order.phone}\n\n${items}\n\n💰 ${order.totalPrice.toLocaleString()} so'm`;
+  const deliveryLabel = deliveryTypeLabels[order.deliveryType] || order.deliveryType;
+  const addressLine =
+    order.deliveryType === 'delivery' && order.address
+      ? `\n📍 Manzil: ${order.address}`
+      : '';
+  const commentLine = order.comment ? `\n💬 Izoh: ${order.comment}` : '';
+
+  const text = `🆕 YANGI BUYURTMA\n\n📦 ${order.orderNumber}\n👤 ${customer?.fullname || customer?.phone}\n📞 ${order.phone}\n🚚 ${deliveryLabel}${addressLine}${commentLine}\n\n${items}\n\n💰 ${order.totalPrice.toLocaleString()} so'm`;
 
   try {
     await botInstance.telegram.sendMessage(env.adminTelegramChatId, text);
