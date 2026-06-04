@@ -1,16 +1,55 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/axios';
 import { useCartStore } from '../store/cartStore';
 import { useTelegram } from '../hooks/useTelegram';
 
+const formatPhoneDisplay = (phone) => {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('998')) {
+    return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10)}`;
+  }
+  return phone;
+};
+
+const PhoneOption = ({ name, value, checked, onChange, title, subtitle, disabled }) => (
+  <label
+    className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${
+      disabled
+        ? 'cursor-not-allowed opacity-50'
+        : checked
+          ? 'border-brand-600 bg-brand-50 ring-1 ring-brand-600/30 dark:bg-brand-900/20'
+          : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 active:scale-[0.99]'
+    }`}
+  >
+    <input
+      type="radio"
+      name={name}
+      value={value}
+      checked={checked}
+      disabled={disabled}
+      onChange={onChange}
+      className="h-4 w-4 shrink-0 accent-brand-600"
+    />
+    <div className="min-w-0 flex-1">
+      <p className="text-sm font-medium">{title}</p>
+      {subtitle && <p className="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>}
+    </div>
+  </label>
+);
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { items, getTotal, clearCart } = useCartStore();
   const { tg } = useTelegram();
+  const otherPhoneRef = useRef(null);
   const [loading, setLoading] = useState(false);
+  const [phoneLoading, setPhoneLoading] = useState(true);
+  const [userPhone, setUserPhone] = useState('');
+  const [phoneMode, setPhoneMode] = useState('own');
+  const [otherPhone, setOtherPhone] = useState('');
   const [form, setForm] = useState({
-    phone: '',
     address: '',
     comment: '',
     deliveryType: 'delivery',
@@ -20,23 +59,39 @@ export default function Checkout() {
     api
       .get('/customers/me')
       .then((res) => {
-        const phone = res.data.data?.phone;
-        if (phone) setForm((prev) => ({ ...prev, phone }));
+        const phone = res.data.data?.phone || '';
+        setUserPhone(phone);
+        setPhoneMode(phone ? 'own' : 'other');
       })
-      .catch(() => {});
+      .catch(() => setPhoneMode('other'))
+      .finally(() => setPhoneLoading(false));
   }, []);
+
+  const selectPhoneMode = (mode) => {
+    setPhoneMode(mode);
+    tg?.HapticFeedback?.selectionChanged?.();
+    if (mode === 'other') {
+      requestAnimationFrame(() => otherPhoneRef.current?.focus());
+    }
+  };
+
+  const orderPhone = phoneMode === 'own' ? userPhone : otherPhone.trim();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.phone) {
-      tg?.showAlert?.('Telefon raqamni kiriting');
+    if (!orderPhone) {
+      tg?.showAlert?.(
+        phoneMode === 'own'
+          ? 'Profil telefon raqami topilmadi. Boshqa raqamni tanlang.'
+          : 'Telefon raqamni kiriting'
+      );
       return;
     }
     setLoading(true);
     try {
       await api.post('/orders', {
         items: items.map((i) => ({ productId: i._id, quantity: i.quantity })),
-        phone: form.phone,
+        phone: orderPhone,
         address: form.address,
         comment: form.comment,
         deliveryType: form.deliveryType,
@@ -60,20 +115,48 @@ export default function Checkout() {
     <div className="px-4 py-4 pb-8">
       <h1 className="text-xl font-bold mb-4">Buyurtma</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="text-sm text-gray-500">Telefon *</label>
-          <input
-            required
-            type="tel"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            placeholder="+998 90 123 45 67"
-            className="mt-1 w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm"
-          />
-          <p className="mt-1 text-xs text-gray-400">
-            Botda ulashgan raqamingiz avtomatik ko&apos;rsatiladi. Boshqa raqam kerak bo&apos;lsa, o&apos;zgartiring.
-          </p>
-        </div>
+        <fieldset>
+          <legend className="text-sm text-gray-500">Aloqa telefoni *</legend>
+          {phoneLoading ? (
+            <div className="mt-2 space-y-2">
+              <div className="h-[72px] animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+              <div className="h-[72px] animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+            </div>
+          ) : (
+            <div className="mt-2 space-y-2">
+              <PhoneOption
+                name="phoneMode"
+                value="own"
+                checked={phoneMode === 'own'}
+                disabled={!userPhone}
+                onChange={() => selectPhoneMode('own')}
+                title="Mening raqamim"
+                subtitle={userPhone ? formatPhoneDisplay(userPhone) : 'Botda telefon ulashilmagan'}
+              />
+              <PhoneOption
+                name="phoneMode"
+                value="other"
+                checked={phoneMode === 'other'}
+                onChange={() => selectPhoneMode('other')}
+                title="Boshqa raqam"
+                subtitle="Boshqa odam yoki qo‘shimcha raqam"
+              />
+              {phoneMode === 'other' && (
+                <input
+                  ref={otherPhoneRef}
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={otherPhone}
+                  onChange={(e) => setOtherPhone(e.target.value)}
+                  placeholder="+998 90 123 45 67"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800"
+                />
+              )}
+            </div>
+          )}
+        </fieldset>
+
         <div>
           <label className="text-sm text-gray-500">Yetkazish turi</label>
           <div className="flex gap-2 mt-1">
@@ -123,7 +206,7 @@ export default function Checkout() {
         </div>
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || phoneLoading}
           className="w-full rounded-xl bg-brand-600 py-3.5 font-semibold text-white disabled:opacity-50"
         >
           {loading ? 'Yuborilmoqda...' : 'Buyurtmani tasdiqlash'}
