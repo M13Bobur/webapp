@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { getVariantPrice, hasVariants, makeCartLineId } from '../utils/productPrice';
+import { useToastStore } from './toastStore';
 
 export const useCartStore = create(
   persist(
@@ -9,7 +10,10 @@ export const useCartStore = create(
 
       addItem: (product, quantity = 1, variantName = '') => {
         const vName = hasVariants(product) ? variantName : '';
-        if (hasVariants(product) && !vName) return false;
+        if (hasVariants(product) && !vName) {
+          useToastStore.getState().show('Variant tanlang');
+          return false;
+        }
 
         const cartLineId = makeCartLineId(product._id, vName);
         const price = hasVariants(product) ? getVariantPrice(product, vName) : (product.discountPrice ?? product.price);
@@ -42,6 +46,7 @@ export const useCartStore = create(
             ],
           });
         }
+        useToastStore.getState().show('Savatga qo\'shildi');
         return true;
       },
 

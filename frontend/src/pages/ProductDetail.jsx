@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, getImageUrl } from '../api/axios';
 import { useCartStore } from '../store/cartStore';
-import { useTelegram } from '../hooks/useTelegram';
 import { Skeleton } from '../components/Skeleton';
 import { hasVariants, getVariantPrice } from '../utils/productPrice';
 
@@ -14,7 +13,6 @@ export default function ProductDetail() {
   const [selectedVariant, setSelectedVariant] = useState('');
   const [loading, setLoading] = useState(true);
   const addItem = useCartStore((s) => s.addItem);
-  const { tg } = useTelegram();
 
   useEffect(() => {
     api.get(`/products/${id}`)
@@ -48,10 +46,7 @@ export default function ProductDetail() {
 
   const handleAdd = () => {
     const ok = addItem(product, qty, selectedVariant);
-    if (!ok) {
-      tg?.showAlert?.('Variant tanlang');
-      return;
-    }
+    if (!ok) return;
     navigate('/cart');
   };
 
