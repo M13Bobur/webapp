@@ -3,7 +3,7 @@ import { Server } from 'socket.io';
 import { env } from './config/env.js';
 import { connectDatabase } from './config/database.js';
 import { createApp } from './app.js';
-import { initBot } from './bot/index.js';
+import { configureBotMenuButton, initBot } from './bot/index.js';
 import { ensureDefaultAdmin } from './services/auth.service.js';
 import { setIoInstance } from './services/notification.service.js';
 
@@ -39,7 +39,14 @@ const start = async () => {
   if (bot) {
     bot
       .launch()
-      .then(() => console.log('Telegram bot started'))
+      .then(async () => {
+        console.log('Telegram bot started');
+        try {
+          await configureBotMenuButton(bot);
+        } catch (err) {
+          console.warn('Bot menu button setup failed:', err.message);
+        }
+      })
       .catch((err) => console.warn('Telegram bot failed to start:', err.message));
     process.once('SIGINT', () => bot.stop('SIGINT'));
     process.once('SIGTERM', () => bot.stop('SIGTERM'));

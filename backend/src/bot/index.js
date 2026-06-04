@@ -12,14 +12,12 @@ export const initBot = () => {
   const bot = new Telegraf(env.telegramBotToken);
   setBotInstance(bot);
 
-  const webAppKeyboard = Markup.keyboard([
-    [Markup.button.webApp('🍽 Menyuni ochish', env.telegramWebAppUrl)],
+  const phoneKeyboard = Markup.keyboard([
     [Markup.button.contactRequest('📱 Telefon raqamni ulashish')],
   ]).resize();
 
-  const startKeyboard = Markup.inlineKeyboard([
+  const orderKeyboard = Markup.inlineKeyboard([
     [Markup.button.webApp('🛒 Buyurtma berish', env.telegramWebAppUrl)],
-    [Markup.button.callback('📋 Menyu', 'menu')],
   ]);
 
   bot.start(async (ctx) => {
@@ -33,10 +31,19 @@ export const initBot = () => {
     });
 
     const welcomeText = existing.phone
-      ? `Assalomu alaykum, ${user.first_name}! 👋\n\nFaiza Cafe ga xush kelibsiz! Buyurtma berish uchun menyuni oching.`
+      ? `Assalomu alaykum, ${user.first_name}! 👋\n\nFaiza Cafe ga xush kelibsiz! Buyurtma berish uchun tugmani bosing.`
       : `Assalomu alaykum, ${user.first_name}! 👋\n\nFaiza Cafe ga xush kelibsiz!\n\nBuyurtma berish uchun telefon raqamingizni ulashing.`;
 
-    await ctx.reply(welcomeText, existing.phone ? startKeyboard : webAppKeyboard);
+    if (existing.phone) {
+      await ctx.reply(welcomeText, {
+        reply_markup: {
+          remove_keyboard: true,
+          inline_keyboard: orderKeyboard.reply_markup.inline_keyboard,
+        },
+      });
+    } else {
+      await ctx.reply(welcomeText, phoneKeyboard);
+    }
   });
 
   bot.on('contact', async (ctx) => {
@@ -53,19 +60,8 @@ export const initBot = () => {
       phone: contact.phone_number,
     });
 
-    await ctx.reply(
-      '✅ Telefon raqamingiz saqlandi!\n\nEndi menyuni ochib buyurtma berishingiz mumkin.',
-      startKeyboard
-    );
-  });
-
-  bot.action('menu', async (ctx) => {
-    await ctx.answerCbQuery();
-    await ctx.reply('🍽 Menyuni ochish uchun tugmani bosing:', startKeyboard);
-  });
-
-  bot.command('menu', async (ctx) => {
-    await ctx.reply('🍽 Faiza Cafe menyusi:', startKeyboard);
+    await ctx.reply('✅ Telefon raqamingiz saqlandi!', Markup.removeKeyboard());
+    await ctx.reply('Endi buyurtma berishingiz mumkin:', orderKeyboard);
   });
 
   bot.catch((err) => {
@@ -73,4 +69,15 @@ export const initBot = () => {
   });
 
   return bot;
+};
+
+export const configureBotMenuButton = async (bot) => {
+  if (!env.telegramWebAppUrl) return;
+  await bot.telegram.setChatMenuButton({
+    menu_button: {
+      type: 'web_app',
+      text: '🛒 Buyurtma berish',
+      web_app: { url: env.telegramWebAppUrl },
+    },
+  });
 };
