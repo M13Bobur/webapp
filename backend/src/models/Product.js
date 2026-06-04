@@ -1,11 +1,20 @@
 import mongoose from 'mongoose';
 
+const variantSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    price: { type: Number, required: true, min: 0 },
+  },
+  { _id: false }
+);
+
 const productSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     slug: { type: String, required: true, unique: true, index: true },
     description: { type: String, default: '' },
     shortDescription: { type: String, default: '' },
+    variants: { type: [variantSchema], default: [] },
     price: { type: Number, required: true, min: 0 },
     discountPrice: { type: Number, min: 0, default: null },
     images: [{ type: String }],

@@ -1,18 +1,27 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { getVariantPrice, hasVariants, makeCartLineId } from '../utils/productPrice';
 
 export const useCartStore = create(
   persist(
     (set, get) => ({
       items: [],
 
-      addItem: (product, quantity = 1) => {
+      addItem: (product, quantity = 1, variantName = '') => {
+        const vName = hasVariants(product) ? variantName : '';
+        if (hasVariants(product) && !vName) return false;
+
+        const cartLineId = makeCartLineId(product._id, vName);
+        const price = hasVariants(product) ? getVariantPrice(product, vName) : (product.discountPrice ?? product.price);
+        const title = vName ? `${product.title} (${vName})` : product.title;
+
         const items = get().items;
-        const existing = items.find((i) => i._id === product._id);
+        const existing = items.find((i) => i.cartLineId === cartLineId);
+
         if (existing) {
           set({
             items: items.map((i) =>
-              i._id === product._id
+              i.cartLineId === cartLineId
                 ? { ...i, quantity: i.quantity + quantity }
                 : i
             ),
@@ -23,28 +32,31 @@ export const useCartStore = create(
               ...items,
               {
                 _id: product._id,
-                title: product.title,
-                price: product.discountPrice ?? product.price,
+                cartLineId,
+                title,
+                variantName: vName,
+                price,
                 image: product.images?.[0],
                 quantity,
               },
             ],
           });
         }
+        return true;
       },
 
-      removeItem: (productId) => {
-        set({ items: get().items.filter((i) => i._id !== productId) });
+      removeItem: (cartLineId) => {
+        set({ items: get().items.filter((i) => i.cartLineId !== cartLineId) });
       },
 
-      updateQuantity: (productId, quantity) => {
+      updateQuantity: (cartLineId, quantity) => {
         if (quantity < 1) {
-          get().removeItem(productId);
+          get().removeItem(cartLineId);
           return;
         }
         set({
           items: get().items.map((i) =>
-            i._id === productId ? { ...i, quantity } : i
+            i.cartLineId === cartLineId ? { ...i, quantity } : i
           ),
         });
       },
@@ -57,6 +69,18 @@ export const useCartStore = create(
       getCount: () =>
         get().items.reduce((sum, i) => sum + i.quantity, 0),
     }),
-    { name: 'faiza-cart' }
+    {
+      name: 'faiza-cart',
+      migrate: (state) => {
+        if (!state?.items) return state;
+        return {
+          ...state,
+          items: state.items.map((i) => ({
+            ...i,
+            cartLineId: i.cartLineId || makeCartLineId(i._id, i.variantName || ''),
+          })),
+        };
+      },
+    }
   )
 );

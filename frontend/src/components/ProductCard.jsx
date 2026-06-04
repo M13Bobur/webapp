@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getImageUrl } from '../api/axios';
 import { useCartStore } from '../store/cartStore';
+import { getDisplayPrice, hasVariants } from '../utils/productPrice';
 
 const badgeColors = {
   new: 'bg-green-500',
@@ -9,8 +10,10 @@ const badgeColors = {
 };
 
 export const ProductCard = ({ product }) => {
+  const navigate = useNavigate();
   const addItem = useCartStore((s) => s.addItem);
-  const price = product.discountPrice ?? product.price;
+  const withVariants = hasVariants(product);
+  const { label: priceLabel } = getDisplayPrice(product);
   const available =
     product.isAvailable !== false &&
     (product.stock === undefined || product.stock > 0);
@@ -52,8 +55,11 @@ export const ProductCard = ({ product }) => {
         </Link>
         <div className="flex items-center justify-between mt-2">
           <div>
-            <span className="font-bold text-brand-600">{price.toLocaleString()} so'm</span>
-            {product.discountPrice && (
+            <span className="font-bold text-brand-600">
+              {withVariants && <span className="text-xs font-normal text-gray-500">dan </span>}
+              {priceLabel}
+            </span>
+            {!withVariants && product.discountPrice && (
               <span className="ml-1 text-xs text-gray-400 line-through">
                 {product.price.toLocaleString()}
               </span>
@@ -61,10 +67,14 @@ export const ProductCard = ({ product }) => {
           </div>
           <button
             disabled={!available}
-            onClick={() => addItem(product)}
+            onClick={() =>
+              withVariants
+                ? navigate(`/products/${product._id}`)
+                : addItem(product)
+            }
             className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
           >
-            +
+            {withVariants ? 'Tanlash' : '+'}
           </button>
         </div>
       </div>

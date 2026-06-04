@@ -1,11 +1,21 @@
 import Joi from 'joi';
 
+const variantSchema = Joi.object({
+  name: Joi.string().trim().min(1).max(80).required(),
+  price: Joi.number().min(0).required(),
+});
+
 export const createProductSchema = Joi.object({
   body: Joi.object({
     title: Joi.string().trim().min(2).max(200).required(),
     description: Joi.string().allow(''),
     shortDescription: Joi.string().max(300).allow(''),
-    price: Joi.number().min(0).required(),
+    variants: Joi.array().items(variantSchema).max(20).default([]),
+    price: Joi.number().min(0).when('variants', {
+      is: Joi.array().min(1),
+      then: Joi.optional(),
+      otherwise: Joi.required(),
+    }),
     discountPrice: Joi.number().min(0).allow(null),
     categoryId: Joi.string().hex().length(24).required(),
     isAvailable: Joi.boolean(),
@@ -23,6 +33,7 @@ export const updateProductSchema = Joi.object({
     title: Joi.string().trim().min(2).max(200),
     description: Joi.string().allow(''),
     shortDescription: Joi.string().max(300).allow(''),
+    variants: Joi.array().items(variantSchema).max(20),
     price: Joi.number().min(0),
     discountPrice: Joi.number().min(0).allow(null),
     categoryId: Joi.string().hex().length(24),

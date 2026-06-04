@@ -93,7 +93,11 @@ export default function Checkout() {
     setLoading(true);
     try {
       await api.post('/orders', {
-        items: items.map((i) => ({ productId: i._id, quantity: i.quantity })),
+        items: items.map((i) => ({
+          productId: i._id,
+          quantity: i.quantity,
+          variantName: i.variantName || '',
+        })),
         phone: orderPhone,
         address: form.address,
         comment: form.comment,

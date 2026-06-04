@@ -9,6 +9,7 @@ import {
   notifyAdminNewOrder,
   emitOrderUpdate,
 } from './notification.service.js';
+import { resolveProductPrice } from '../utils/productPrice.js';
 
 const normalizeImagePath = (path) => {
   if (!path || typeof path !== 'string') return '';
@@ -78,6 +79,7 @@ export const enrichOrdersWithImages = async (orders) => {
       return {
         productId: pid,
         title: item.title,
+        variantName: item.variantName || '',
         quantity: item.quantity,
         price: item.price,
         image,
@@ -108,10 +110,14 @@ export const createOrder = async (customerId, orderData) => {
       throw new AppError(`Insufficient stock for "${product.title}"`, 400);
     }
 
-    const price = product.discountPrice ?? product.price;
+    const variantName = item.variantName ? String(item.variantName).trim() : '';
+    const price = resolveProductPrice(product, variantName);
+    const title = variantName ? `${product.title} (${variantName})` : product.title;
+
     orderItems.push({
       productId: product._id,
-      title: product.title,
+      title,
+      variantName,
       image: normalizeImagePath(product.images?.[0] || ''),
       quantity: item.quantity,
       price,

@@ -24,5 +24,13 @@ export const parseMultipartBody = (req, _res, next) => {
     }
   }
 
+  if (typeof req.body.variants === 'string') {
+    try {
+      req.body.variants = JSON.parse(req.body.variants);
+    } catch {
+      req.body.variants = [];
+    }
+  }
+
   next();
 };

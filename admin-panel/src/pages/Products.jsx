@@ -8,6 +8,8 @@ const emptyForm = {
   isAvailable: true, badges: [],
 };
 
+const emptyVariant = { name: '', price: '' };
+
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -16,6 +18,8 @@ export default function Products() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [useVariants, setUseVariants] = useState(false);
+  const [variants, setVariants] = useState([{ ...emptyVariant }]);
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,6 +50,8 @@ export default function Products() {
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
+    setUseVariants(false);
+    setVariants([{ ...emptyVariant }]);
     setImages([]);
     setModalOpen(true);
   };
@@ -64,8 +70,27 @@ export default function Products() {
       isAvailable: product.isAvailable,
       badges: product.badges || [],
     });
+    const hasV = Array.isArray(product.variants) && product.variants.length > 0;
+    setUseVariants(hasV);
+    setVariants(
+      hasV
+        ? product.variants.map((v) => ({ name: v.name, price: v.price }))
+        : [{ ...emptyVariant }]
+    );
     setImages([]);
     setModalOpen(true);
+  };
+
+  const addVariantRow = () => setVariants((v) => [...v, { ...emptyVariant }]);
+
+  const updateVariant = (index, field, value) => {
+    setVariants((list) =>
+      list.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    );
+  };
+
+  const removeVariant = (index) => {
+    setVariants((list) => (list.length > 1 ? list.filter((_, i) => i !== index) : list));
   };
 
   const handleSubmit = async (e) => {
@@ -75,6 +100,22 @@ export default function Products() {
       if (k === 'badges') fd.append(k, JSON.stringify(v));
       else if (v !== '' && v !== null) fd.append(k, v);
     });
+
+    if (useVariants) {
+      const cleaned = variants
+        .filter((v) => v.name.trim() && v.price !== '')
+        .map((v) => ({ name: v.name.trim(), price: Number(v.price) }));
+      if (cleaned.length === 0) {
+        alert('Kamida bitta variant qo\'shing (nomi va narxi)');
+        return;
+      }
+      fd.append('variants', JSON.stringify(cleaned));
+      fd.append('price', String(Math.min(...cleaned.map((v) => v.price))));
+      fd.delete('discountPrice');
+    } else {
+      fd.append('variants', JSON.stringify([]));
+    }
+
     images.forEach((f) => fd.append('images', f));
 
     if (editing) {
@@ -104,6 +145,18 @@ export default function Products() {
     }));
   };
 
+  const formatPrice = (p) => {
+    if (p.variants?.length) {
+      const prices = p.variants.map((v) => v.price);
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+      return min === max
+        ? `${min.toLocaleString()} so'm`
+        : `${min.toLocaleString()} - ${max.toLocaleString()} so'm`;
+    }
+    return `${(p.discountPrice ?? p.price).toLocaleString()} so'm`;
+  };
+
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
@@ -126,7 +179,15 @@ export default function Products() {
                   <h3 className="font-semibold">{p.title}</h3>
                   <Badge color={p.isAvailable ? 'green' : 'red'}>{p.isAvailable ? 'Mavjud' : 'Yo\'q'}</Badge>
                 </div>
-                <p className="text-orange-600 font-bold mt-1">{(p.discountPrice ?? p.price).toLocaleString()} so'm</p>
+                <p className="text-orange-600 font-bold mt-1">
+                  {p.variants?.length > 0 && <span className="text-xs font-normal text-gray-500">dan </span>}
+                  {formatPrice(p)}
+                </p>
+                {p.variants?.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {p.variants.map((v) => v.name).join(' · ')}
+                  </p>
+                )}
                 <div className="flex gap-1 mt-2">
                   {p.badges?.map((b) => <Badge key={b} color="purple">{b}</Badge>)}
                 </div>
@@ -144,7 +205,7 @@ export default function Products() {
       )}
       <Pagination page={pagination.page} totalPages={pagination.totalPages} onPageChange={load} />
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Mahsulotni tahrirlash' : 'Yangi mahsulot'}>
+      <Modal wide open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? 'Mahsulotni tahrirlash' : 'Yangi mahsulot'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input label="Nomi" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
           <Input label="Qisqa tavsif" value={form.shortDescription} onChange={(e) => setForm({ ...form, shortDescription: e.target.value })} />
@@ -155,10 +216,69 @@ export default function Products() {
             className="w-full rounded-lg border px-3 py-2 text-sm"
             rows={3}
           />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Narx" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
-            <Input label="Chegirma narxi" type="number" value={form.discountPrice} onChange={(e) => setForm({ ...form, discountPrice: e.target.value })} />
+
+          <div className="rounded-lg border border-gray-200 p-4 space-y-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={useVariants}
+                onChange={(e) => {
+                  setUseVariants(e.target.checked);
+                  if (!e.target.checked) setVariants([{ ...emptyVariant }]);
+                }}
+                className="rounded border-gray-300"
+              />
+              <span className="text-sm font-medium">Variantlar bor (masalan: Kichik, O&apos;rta, Katta)</span>
+            </label>
+            <p className="text-xs text-gray-500">
+              O&apos;chirilgan bo&apos;lsa — oddiy mahsulot: bitta narx kiritasiz.
+            </p>
+
+            {useVariants ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-700">Variantlar va narxlari</p>
+                {variants.map((v, index) => (
+                  <div key={index} className="flex gap-2 items-end">
+                    <Input
+                      label={index === 0 ? 'Nomi' : undefined}
+                      placeholder="Kichik"
+                      value={v.name}
+                      onChange={(e) => updateVariant(index, 'name', e.target.value)}
+                      className="flex-1"
+                      required
+                    />
+                    <Input
+                      label={index === 0 ? 'Narx' : undefined}
+                      type="number"
+                      placeholder="45000"
+                      value={v.price}
+                      onChange={(e) => updateVariant(index, 'price', e.target.value)}
+                      className="w-32"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="!px-2 shrink-0"
+                      onClick={() => removeVariant(index)}
+                      disabled={variants.length === 1}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="secondary" className="text-xs" onClick={addVariantRow}>
+                  + Variant qo&apos;shish
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                <Input label="Narx" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
+                <Input label="Chegirma narxi" type="number" value={form.discountPrice} onChange={(e) => setForm({ ...form, discountPrice: e.target.value })} />
+              </div>
+            )}
           </div>
+
           <Select
             label="Kategoriya"
             options={[{ value: '', label: 'Tanlang' }, ...categories.map((c) => ({ value: c._id, label: c.title }))]}

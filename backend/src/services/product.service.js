@@ -3,6 +3,7 @@ import { Category } from '../models/Category.js';
 import { AppError } from '../utils/AppError.js';
 import { createSlug } from '../utils/slug.js';
 import { getPagination, paginatedResponse } from '../utils/pagination.js';
+import { applyVariantsToProductData } from '../utils/productPrice.js';
 
 const buildProductFilter = (query) => {
   const filter = {};
@@ -25,6 +26,14 @@ export const createProduct = async (data, images = []) => {
   const exists = await Product.findOne({ slug });
   if (exists) throw new AppError('Product with this title already exists', 400);
 
+  applyVariantsToProductData(data);
+  if (!data.price && data.variants?.length) {
+    throw new AppError('Variant narxi kerak', 400);
+  }
+  if (!data.variants?.length && (data.price === undefined || data.price === null)) {
+    throw new AppError('Narx kerak', 400);
+  }
+
   return Product.create({ ...data, slug, images });
 };
 
@@ -45,6 +54,10 @@ export const updateProduct = async (id, data, newImages = []) => {
 
   if (newImages.length) {
     data.images = [...(product.images || []), ...newImages];
+  }
+
+  if (data.variants !== undefined) {
+    applyVariantsToProductData(data);
   }
 
   Object.assign(product, data);
@@ -102,6 +115,6 @@ export const getTopProducts = async (limit = 5) => {
     .sort({ orderCount: -1 })
     .limit(limit)
     .select(
-      'title slug shortDescription price discountPrice images orderCount badges isAvailable stock'
+      'title slug shortDescription price discountPrice images variants orderCount badges isAvailable stock'
     );
 };

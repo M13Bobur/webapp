@@ -26,7 +26,7 @@ export default function Cart() {
       <h1 className="text-xl font-bold mb-4">Savat ({getCount()})</h1>
       <div className="space-y-3">
         {items.map((item) => (
-          <div key={item._id} className="flex gap-3 rounded-2xl bg-white dark:bg-gray-800 p-3 shadow-sm">
+          <div key={item.cartLineId || item._id} className="flex gap-3 rounded-2xl bg-white dark:bg-gray-800 p-3 shadow-sm">
             <div className="h-16 w-16 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
               <img src={getImageUrl(item.image)} alt="" className="h-full w-full object-cover" />
             </div>
@@ -37,11 +37,11 @@ export default function Cart() {
               </p>
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center rounded-lg border border-gray-200 dark:border-gray-600">
-                  <button onClick={() => updateQuantity(item._id, item.quantity - 1)} className="px-2 py-1">−</button>
+                  <button onClick={() => updateQuantity(item.cartLineId, item.quantity - 1)} className="px-2 py-1">−</button>
                   <span className="px-2 text-sm">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item._id, item.quantity + 1)} className="px-2 py-1">+</button>
+                  <button onClick={() => updateQuantity(item.cartLineId, item.quantity + 1)} className="px-2 py-1">+</button>
                 </div>
-                <button onClick={() => removeItem(item._id)} className="text-red-500 text-xs">O'chirish</button>
+                <button onClick={() => removeItem(item.cartLineId)} className="text-red-500 text-xs">O'chirish</button>
               </div>
             </div>
           </div>
