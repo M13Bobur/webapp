@@ -14,7 +14,9 @@ const OrderViewIcon = () => (
 );
 
 const getItemImage = (item) => {
-  const path = item.productId?.images?.[0];
+  const path =
+    item.image ||
+    (item.productId && typeof item.productId === 'object' ? item.productId.images?.[0] : null);
   return path ? getImageUrl(path) : '';
 };
 
@@ -235,52 +237,46 @@ export default function Orders() {
             </div>
 
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Buyurtma qilingan mahsulotlar</p>
-              <div className="rounded-lg border overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="text-left px-3 py-2 font-medium">Mahsulot</th>
-                      <th className="text-right px-3 py-2 font-medium">Miqdor</th>
-                      <th className="text-right px-3 py-2 font-medium">Narx</th>
-                      <th className="text-right px-3 py-2 font-medium">Summa</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {viewOrder.items.map((item, idx) => {
-                      const img = getItemImage(item);
-                      return (
-                        <tr key={idx} className="border-b last:border-0">
-                          <td className="px-3 py-2">
-                            <div className="flex items-center gap-3">
-                              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
-                                {img ? (
-                                  <img src={img} alt={item.title} className="h-full w-full object-cover" />
-                                ) : (
-                                  <span className="flex h-full w-full items-center justify-center text-2xl text-gray-400">🍽</span>
-                                )}
-                              </div>
-                              <span className="font-medium">{item.title}</span>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2 text-right align-middle">{item.quantity}</td>
-                          <td className="px-3 py-2 text-right align-middle">{item.price.toLocaleString()}</td>
-                          <td className="px-3 py-2 text-right align-middle font-medium">
-                            {(item.price * item.quantity).toLocaleString()}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot className="bg-gray-50">
-                    <tr>
-                      <td colSpan={3} className="px-3 py-2 text-right font-semibold">Jami</td>
-                      <td className="px-3 py-2 text-right font-bold text-orange-600">
-                        {viewOrder.totalPrice.toLocaleString()} so'm
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+              <p className="text-sm font-medium text-gray-700 mb-3">Buyurtma qilingan mahsulotlar</p>
+              <div className="space-y-3">
+                {viewOrder.items.map((item, idx) => {
+                  const img = getItemImage(item);
+                  return (
+                    <div
+                      key={idx}
+                      className="flex gap-4 rounded-xl border border-gray-200 bg-gray-50/50 p-4"
+                    >
+                      <div className="h-32 w-32 shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        {img ? (
+                          <img
+                            src={img}
+                            alt={item.title}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-gray-100 text-xs text-gray-400">
+                            Rasm yo&apos;q
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex min-w-0 flex-1 flex-col justify-center">
+                        <p className="text-base font-semibold text-gray-900">{item.title}</p>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {item.price.toLocaleString()} so&apos;m × {item.quantity}
+                        </p>
+                        <p className="mt-2 text-lg font-bold text-orange-600">
+                          {(item.price * item.quantity).toLocaleString()} so&apos;m
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 flex justify-between rounded-xl bg-orange-50 px-4 py-3 font-semibold">
+                <span>Jami</span>
+                <span className="text-lg text-orange-600">
+                  {viewOrder.totalPrice.toLocaleString()} so&apos;m
+                </span>
               </div>
             </div>
 
