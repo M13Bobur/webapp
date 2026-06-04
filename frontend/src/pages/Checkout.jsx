@@ -13,6 +13,23 @@ const formatPhoneDisplay = (phone) => {
   return phone;
 };
 
+const PHONE_PREFIX = '+998';
+
+const formatOtherPhoneInput = (value) => {
+  const raw = String(value).trim();
+  if (!raw || raw === '+' || raw.length < PHONE_PREFIX.length) return PHONE_PREFIX;
+
+  if (raw.startsWith(PHONE_PREFIX)) {
+    return PHONE_PREFIX + raw.slice(PHONE_PREFIX.length).replace(/\D/g, '');
+  }
+  if (raw.startsWith('998')) {
+    return `+${raw.replace(/\D/g, '')}`;
+  }
+
+  const digits = raw.replace(/\D/g, '').replace(/^998/, '');
+  return `${PHONE_PREFIX}${digits}`;
+};
+
 const PhoneOption = ({ checked, onSelect, title, subtitle, disabled }) => (
   <button
     type="button"
@@ -64,9 +81,17 @@ export default function Checkout() {
       .then((res) => {
         const phone = res.data.data?.phone || '';
         setUserPhone(phone);
-        setPhoneMode(phone ? 'own' : 'other');
+        if (phone) {
+          setPhoneMode('own');
+        } else {
+          setPhoneMode('other');
+          setOtherPhone(PHONE_PREFIX);
+        }
       })
-      .catch(() => setPhoneMode('other'))
+      .catch(() => {
+        setPhoneMode('other');
+        setOtherPhone(PHONE_PREFIX);
+      })
       .finally(() => setPhoneLoading(false));
   }, []);
 
@@ -74,8 +99,19 @@ export default function Checkout() {
     setPhoneMode(mode);
     tg?.HapticFeedback?.selectionChanged?.();
     if (mode === 'other') {
-      requestAnimationFrame(() => otherPhoneRef.current?.focus());
+      setOtherPhone((prev) => (prev.trim() ? formatOtherPhoneInput(prev) : PHONE_PREFIX));
+      requestAnimationFrame(() => {
+        const el = otherPhoneRef.current;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(el.value.length, el.value.length);
+        }
+      });
     }
+  };
+
+  const handleOtherPhoneChange = (value) => {
+    setOtherPhone(formatOtherPhoneInput(value));
   };
 
   const orderPhone = phoneMode === 'own' ? userPhone : otherPhone.trim();
@@ -155,7 +191,10 @@ export default function Checkout() {
                   inputMode="tel"
                   autoComplete="tel"
                   value={otherPhone}
-                  onChange={(e) => setOtherPhone(e.target.value)}
+                  onChange={(e) => handleOtherPhoneChange(e.target.value)}
+                  onFocus={() => {
+                    if (!otherPhone.trim()) setOtherPhone(PHONE_PREFIX);
+                  }}
                   placeholder="+998 90 123 45 67"
                   className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm transition focus:outline-none focus:ring-2 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-800"
                 />
