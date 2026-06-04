@@ -13,9 +13,14 @@ const formatPhoneDisplay = (phone) => {
   return phone;
 };
 
-const PhoneOption = ({ name, value, checked, onChange, title, subtitle, disabled }) => (
-  <label
-    className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${
+const PhoneOption = ({ checked, onSelect, title, subtitle, disabled }) => (
+  <button
+    type="button"
+    role="radio"
+    aria-checked={checked}
+    disabled={disabled}
+    onClick={onSelect}
+    className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-all ${
       disabled
         ? 'cursor-not-allowed opacity-50'
         : checked
@@ -23,20 +28,18 @@ const PhoneOption = ({ name, value, checked, onChange, title, subtitle, disabled
           : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 active:scale-[0.99]'
     }`}
   >
-    <input
-      type="radio"
-      name={name}
-      value={value}
-      checked={checked}
-      disabled={disabled}
-      onChange={onChange}
-      className="h-4 w-4 shrink-0 accent-brand-600"
-    />
+    <span
+      className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
+        checked ? 'border-brand-600 bg-brand-600' : 'border-gray-300 dark:border-gray-600'
+      }`}
+    >
+      {checked && <span className="h-1.5 w-1.5 rounded-full bg-white" />}
+    </span>
     <div className="min-w-0 flex-1">
       <p className="text-sm font-medium">{title}</p>
       {subtitle && <p className="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">{subtitle}</p>}
     </div>
-  </label>
+  </button>
 );
 
 export default function Checkout() {
@@ -125,21 +128,21 @@ export default function Checkout() {
           ) : (
             <div className="mt-2 space-y-2">
               <PhoneOption
-                name="phoneMode"
-                value="own"
                 checked={phoneMode === 'own'}
                 disabled={!userPhone}
-                onChange={() => selectPhoneMode('own')}
+                onSelect={() => userPhone && selectPhoneMode('own')}
                 title="Mening raqamim"
-                subtitle={userPhone ? formatPhoneDisplay(userPhone) : 'Botda telefon ulashilmagan'}
+                subtitle={
+                  userPhone
+                    ? formatPhoneDisplay(userPhone)
+                    : 'Botda telefon ulashing, keyin qayta urinib ko\'ring'
+                }
               />
               <PhoneOption
-                name="phoneMode"
-                value="other"
                 checked={phoneMode === 'other'}
-                onChange={() => selectPhoneMode('other')}
+                onSelect={() => selectPhoneMode('other')}
                 title="Boshqa raqam"
-                subtitle="Boshqa odam yoki qo‘shimcha raqam"
+                subtitle="Boshqa raqam kiritish"
               />
               {phoneMode === 'other' && (
                 <input
