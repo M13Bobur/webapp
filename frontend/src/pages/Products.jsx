@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api/axios';
+import { CategoryStrip } from '../components/CategoryStrip';
 import { ProductCard } from '../components/ProductCard';
 import { ProductSkeleton } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
@@ -40,7 +41,9 @@ export default function Products() {
   };
 
   return (
-    <div className="px-4 py-4">
+    <div>
+      <CategoryStrip activeId={categoryId} />
+      <div className="px-4 py-4">
       <h1 className="text-xl font-bold mb-4">{category?.title || 'Mahsulotlar'}</h1>
       {loading && products.length === 0 ? (
         <div className="grid grid-cols-2 gap-3">
@@ -63,6 +66,7 @@ export default function Products() {
           )}
         </>
       )}
+      </div>
     </div>
   );
 }
